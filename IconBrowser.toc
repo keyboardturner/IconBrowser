@@ -5,7 +5,7 @@
 ## Notes: A replacement icon browser for macros, bank, and transmog with a search bar and preset filters.
 ## IconTexture: Interface/MacroFrame/MacroFrame-Icon.blp
 ## X-Curse-Project-ID: 1467127
-## X-WoWI-ID: 
+## X-WoWI-ID: 27059
 ## X-Wago-ID: Q6aRrqKW
 
 ## Title-enUS: Icon Browser
