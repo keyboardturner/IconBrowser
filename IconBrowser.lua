@@ -518,6 +518,12 @@ end
 
 function LRPMIB_IconBrowserMixin:OnIconSelected(iconInfo)
 	if not iconInfo or not iconInfo.file then return end
+	
+	-- if custom callback is defined from addons to use
+	if self.customSelectCallback then
+		self.customSelectCallback(iconInfo.file, iconInfo)
+	end
+
 	local popup = self:GetParent():GetParent()
 
 	if popup and popup.BorderBox then
@@ -645,3 +651,94 @@ baseUILoader:RegisterEvent("PLAYER_LOGIN")
 baseUILoader:SetScript("OnEvent", function()
 	InjectBaseFrames()
 end)
+
+
+-- some Global API stuff for other people to use the browser for their own addons
+------------------------------------------------------------------------------------------------------
+
+_G.LRPMediaIconBrowserAPI = {}
+
+--[[
+	creates and attaches the custom icon browser to a 3rd party addon's frame
+
+	parentFrame - frame that will own the browser
+	anchorFrame - frame the browser should anchor to (e.g., an editbox)
+	width - the width of the browser window
+	height - the height of the browser window
+	onSelectCallback - fired when the clicking an icon, passes (fileID, iconInfo)
+--]]
+function _G.LRPMediaIconBrowserAPI.CreateBrowser(parentFrame, anchorFrame, width, height, onSelectCallback)
+	if not parentFrame then return nil end
+	
+	-- generate a unique name
+	local browser = CreateFrame("Frame", nil, parentFrame, "LRPMIB_IconBrowserFrameTemplate")
+
+	browser:SetSize(width or 250, height or 300)
+	
+	if anchorFrame then
+		browser:SetPoint("TOPLEFT", anchorFrame, "BOTTOMLEFT", 0, -10);
+	else
+		browser:SetPoint("CENTER", parentFrame, "CENTER");
+	end
+	
+	-- attach a callback for OnIconSelected
+	browser.customSelectCallback = onSelectCallback
+
+	browser:Hide()
+	
+	return browser
+end
+
+--[[
+-- complete example:
+
+local MyCustomFrame = CreateFrame("Frame", "MyCustomIconBrowserTestFrame", UIParent, "BasicFrameTemplateWithInset")
+MyCustomFrame:SetSize(500, 480)
+MyCustomFrame:SetPoint("CENTER")
+MyCustomFrame:Hide()
+
+MyCustomFrame.TitleText:SetText("Icon Browser API Test")
+
+MyCustomFrame:SetMovable(true)
+MyCustomFrame:EnableMouse(true)
+MyCustomFrame:RegisterForDrag("LeftButton")
+MyCustomFrame:SetScript("OnDragStart", MyCustomFrame.StartMoving)
+MyCustomFrame:SetScript("OnDragStop", MyCustomFrame.StopMovingOrSizing)
+
+local PreviewIcon = MyCustomFrame:CreateTexture(nil, "ARTWORK")
+PreviewIcon:SetSize(64, 64)
+PreviewIcon:SetPoint("TOP", MyCustomFrame, "TOP", 0, -40)
+PreviewIcon:SetTexture(134400) 
+
+MyCustomFrame:SetScript("OnShow", function(self)
+    if not self.iconBrowser and _G.LRPMediaIconBrowserAPI then
+        
+        local function OnIconSelected(fileID, iconInfo)
+            PreviewIcon:SetTexture(fileID);
+            DevTools_Dump(iconInfo);
+        end
+
+        self.iconBrowser = _G.LRPMediaIconBrowserAPI.CreateBrowser(self, PreviewIcon, 480, 320, OnIconSelected)
+        
+        self.iconBrowser:ClearAllPoints()
+        self.iconBrowser:SetPoint("TOP", PreviewIcon, "BOTTOM", 0, -20)
+        self.iconBrowser:SetPoint("BOTTOM", self, "BOTTOM", 0, 10)
+        
+        self.iconBrowser:Show()
+        
+    elseif not _G.LRPMediaIconBrowserAPI then
+        print("LRPMediaIconBrowserAPI is not loaded! Make sure the addon is enabled.");
+    end
+end)
+
+SLASH_MYICONBROWSER1 = "/iconbrowser"
+
+SlashCmdList["MYICONBROWSER"] = function(msg)
+    if MyCustomFrame:IsShown() then
+        MyCustomFrame:Hide();
+    else
+        MyCustomFrame:Show();
+    end
+end
+
+]]
