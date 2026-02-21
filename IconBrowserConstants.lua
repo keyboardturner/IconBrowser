@@ -22,19 +22,19 @@ LRPMIB.ClassColors = {
 
 local IconBrowserConstants = {
 	ClassCategories = {
-		{ category = LRPM12.IconCategory.Warrior,		name = L.CM_CLASS_WARRIOR, 		color = LRPMIB.ClassColors.WARRIOR },
-		{ category = LRPM12.IconCategory.Paladin,		name = L.CM_CLASS_PALADIN, 		color = LRPMIB.ClassColors.PALADIN },
-		{ category = LRPM12.IconCategory.Hunter,		name = L.CM_CLASS_HUNTER, 		color = LRPMIB.ClassColors.HUNTER },
-		{ category = LRPM12.IconCategory.Rogue,			name = L.CM_CLASS_ROGUE, 		color = LRPMIB.ClassColors.ROGUE },
-		{ category = LRPM12.IconCategory.Priest,		name = L.CM_CLASS_PRIEST, 		color = LRPMIB.ClassColors.PRIEST },
 		{ category = LRPM12.IconCategory.DeathKnight,	name = L.CM_CLASS_DEATHKNIGHT, 	color = LRPMIB.ClassColors.DEATHKNIGHT },
-		{ category = LRPM12.IconCategory.Shaman,		name = L.CM_CLASS_SHAMAN, 		color = LRPMIB.ClassColors.SHAMAN },
-		{ category = LRPM12.IconCategory.Mage,			name = L.CM_CLASS_MAGE, 		color = LRPMIB.ClassColors.MAGE },
-		{ category = LRPM12.IconCategory.Warlock,		name = L.CM_CLASS_WARLOCK, 		color = LRPMIB.ClassColors.WARLOCK },
-		{ category = LRPM12.IconCategory.Monk,			name = L.CM_CLASS_MONK, 		color = LRPMIB.ClassColors.MONK },
-		{ category = LRPM12.IconCategory.Druid,			name = L.CM_CLASS_DRUID, 		color = LRPMIB.ClassColors.DRUID },
 		{ category = LRPM12.IconCategory.DemonHunter,	name = L.CM_CLASS_DEMONHUNTER, 	color = LRPMIB.ClassColors.DEMONHUNTER },
+		{ category = LRPM12.IconCategory.Druid,			name = L.CM_CLASS_DRUID, 		color = LRPMIB.ClassColors.DRUID },
 		{ category = LRPM12.IconCategory.Evoker,		name = L.CM_CLASS_EVOKER, 		color = LRPMIB.ClassColors.EVOKER },
+		{ category = LRPM12.IconCategory.Hunter,		name = L.CM_CLASS_HUNTER, 		color = LRPMIB.ClassColors.HUNTER },
+		{ category = LRPM12.IconCategory.Mage,			name = L.CM_CLASS_MAGE, 		color = LRPMIB.ClassColors.MAGE },
+		{ category = LRPM12.IconCategory.Monk,			name = L.CM_CLASS_MONK, 		color = LRPMIB.ClassColors.MONK },
+		{ category = LRPM12.IconCategory.Paladin,		name = L.CM_CLASS_PALADIN, 		color = LRPMIB.ClassColors.PALADIN },
+		{ category = LRPM12.IconCategory.Priest,		name = L.CM_CLASS_PRIEST, 		color = LRPMIB.ClassColors.PRIEST },
+		{ category = LRPM12.IconCategory.Rogue,			name = L.CM_CLASS_ROGUE, 		color = LRPMIB.ClassColors.ROGUE },
+		{ category = LRPM12.IconCategory.Shaman,		name = L.CM_CLASS_SHAMAN, 		color = LRPMIB.ClassColors.SHAMAN },
+		{ category = LRPM12.IconCategory.Warlock,		name = L.CM_CLASS_WARLOCK, 		color = LRPMIB.ClassColors.WARLOCK },
+		{ category = LRPM12.IconCategory.Warrior,		name = L.CM_CLASS_WARRIOR, 		color = LRPMIB.ClassColors.WARRIOR },
 	};
 
 	CultureCategories = {
