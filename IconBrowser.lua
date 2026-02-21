@@ -652,6 +652,19 @@ baseUILoader:SetScript("OnEvent", function()
 	InjectBaseFrames()
 end)
 
+EventUtil.ContinueOnAddOnLoaded("Baganator", function()
+	Baganator.API.Skins.RegisterListener(function(details)
+		if details.regionType == "ButtonFrame" and details.tags and tIndexOf(details.tags, "bank") ~= nil then
+			if details.region.Character and details.region.Character.TabSettingsMenu then
+				InjectBrowser(details.region.Character.TabSettingsMenu, nil);
+			end
+			if details.region.Warband and details.region.Warband.TabSettingsMenu then
+				InjectBrowser(details.region.Warband.TabSettingsMenu, nil);
+			end
+		end
+	end)
+end)
+
 
 -- some Global API stuff for other people to use the browser for their own addons
 ------------------------------------------------------------------------------------------------------
