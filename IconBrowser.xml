@@ -1,0 +1,129 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<AnimationGroup name="LRPMIB_PulseAnimGroupTemplate" looping="REPEAT" setToFinalAlpha="true" virtual="true">
+		<Alpha fromAlpha="1" toAlpha="0.75" duration="1" smoothing="IN" order="1"/>
+		<Alpha fromAlpha="0.75" toAlpha="1" duration="1" smoothing="OUT" order="2"/>
+		<Scripts>
+			<OnLoad method="Play"/>
+		</Scripts>
+	</AnimationGroup>
+
+	<CheckButton name="LRPMIB_IconBrowserButtonTemplate" mixin="LRPMIB_IconBrowserButtonMixin" virtual="true">
+		<Size x="48" y="48"/>
+		<HitRectInsets left="2" right="2" top="2" bottom="2"/>
+		<Layers>
+			<Layer level="BACKGROUND">
+				<Texture parentKey="Background" atlas="Forge-ColorSwatchBackground"/>
+			</Layer>
+			<Layer level="BORDER">
+				<Texture parentKey="Icon" file="Interface\ICONS\INV_Misc_QuestionMark">
+					<Anchors>
+						<Anchor point="TOPLEFT" x="3" y="-3"/>
+						<Anchor point="BOTTOMRIGHT" x="-3" y="3"/>
+					</Anchors>
+				</Texture>
+			</Layer>
+			<Layer level="OVERLAY">
+				<Texture parentKey="SelectedTexture" atlas="Forge-ColorSwatchSelection" hidden="true">
+					<Animations>
+						<AnimationGroup parentKey="PulseAnim" inherits="LRPMIB_PulseAnimGroupTemplate"/>
+					</Animations>
+				</Texture>
+			</Layer>
+		</Layers>
+		<PushedTexture atlas="Forge-ColorSwatchBackground"/>
+		<HighlightTexture atlas="Forge-ColorSwatchHighlight">
+			<Animations>
+				<AnimationGroup parentKey="PulseAnim" inherits="LRPMIB_PulseAnimGroupTemplate"/>
+			</Animations>
+		</HighlightTexture>
+		<Scripts>
+			<OnLoad method="OnLoad"/>
+			<OnClick method="OnClick"/>
+			<OnEnter method="OnEnter"/>
+			<OnLeave method="OnLeave"/>
+		</Scripts>
+	</CheckButton>
+
+	<StatusBar name="LRPMIB_IconBrowserProgressBar" mixin="SmoothStatusBarMixin" minValue="0" maxValue="1" virtual="true">
+		<Size x="250" y="14"/>
+		<Layers>
+			<Layer level="BACKGROUND">
+				<Texture parentKey="Background">
+					<Anchors>
+						<Anchor point="TOPLEFT" x="2" y="-2"/>
+						<Anchor point="BOTTOMRIGHT" x="-2" y="2"/>
+					</Anchors>
+					<Color r="0" g="0" b="0" a="0.5"/>
+				</Texture>
+			</Layer>
+			<Layer level="OVERLAY">
+				<FontString parentKey="Text" inherits="GameFontHighlightSmall" text="Searching...">
+					<Anchors>
+						<Anchor point="CENTER"/>
+					</Anchors>
+				</FontString>
+			</Layer>
+		</Layers>
+		<BarTexture file="Interface\TargetingFrame\UI-StatusBar">
+			<Color r="0" g="0.75" b="0"/>
+		</BarTexture>
+	</StatusBar>
+
+	<Frame name="LRPMIB_IconBrowserFrameTemplate" mixin="LRPMIB_IconBrowserMixin" hidden="true" virtual="true">
+		<Frames>
+			<DropdownButton parentKey="FilterDropdown" inherits="WowStyle1FilterDropdownTemplate">
+				<KeyValues>
+					<KeyValue key="menuPoint" value="TOPLEFT" type="string"/>
+					<KeyValue key="menuRelativePoint" value="TOPRIGHT" type="string"/>
+				</KeyValues>
+				<Anchors>
+					<Anchor point="TOPRIGHT" x="-10" y="-3"/>
+				</Anchors>
+			</DropdownButton>
+			<EditBox parentKey="SearchBox" inherits="SearchBoxTemplate" autoFocus="false">
+				<Size x="200" y="22"/>
+				<Anchors>
+					<Anchor point="TOPLEFT" x="5" y="0"/>
+					<Anchor point="RIGHT" relativeKey="$parent.FilterDropdown" relativePoint="LEFT" x="-10"/>
+				</Anchors>
+			</EditBox>
+			<Frame parentKey="Content">
+				<Anchors>
+					<Anchor point="TOP" relativeKey="$parent.SearchBox" relativePoint="BOTTOM" y="-10"/>
+					<Anchor point="LEFT" x="10"/>
+					<Anchor point="RIGHT" x="-10"/>
+					<Anchor point="BOTTOM" y="10"/>
+				</Anchors>
+				<Frames>
+					<Frame parentKey="ScrollBox" inherits="WowScrollBoxList"/>
+					<EventFrame parentKey="ScrollBar" inherits="MinimalScrollBar">
+						<Anchors>
+							<Anchor point="TOPRIGHT" x="-10" y="-8"/>
+							<Anchor point="BOTTOMRIGHT" x="-10" y="8"/>
+						</Anchors>
+					</EventFrame>
+					<Frame parentKey="ProgressOverlay" hidden="true" frameLevel="1000">
+						<Anchors>
+							<Anchor point="TOPLEFT"/>
+							<Anchor point="BOTTOMRIGHT"/>
+						</Anchors>
+						<Layers>
+							<Layer level="BACKGROUND">
+								<Texture><Color a="0.6"/></Texture>
+							</Layer>
+						</Layers>
+						<Frames>
+							<StatusBar parentKey="ProgressBar" inherits="LRPMIB_IconBrowserProgressBar">
+								<Anchors><Anchor point="CENTER"/></Anchors>
+							</StatusBar>
+						</Frames>
+					</Frame>
+				</Frames>
+			</Frame>
+		</Frames>
+		<Scripts>
+			<OnLoad method="OnLoad"/>
+			<OnShow method="OnShow"/>
+		</Scripts>
+	</Frame>
+</Ui>

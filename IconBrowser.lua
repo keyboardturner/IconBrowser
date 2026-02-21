@@ -1,0 +1,647 @@
+--[[
+	all hail Meorawr AKA moowoo aka Miku Enjoyer 2 aka Meowaww aka Meorawr Malvaceaa aka idk what else to put here
+	
+	anyway here's the original trp3 copyright because it's relevant to the code i "borrowed" / adapted from:
+
+	-- Copyright The Total RP 3 Authors
+	-- SPDX-License-Identifier: Apache-2.0
+
+--]]
+
+local addonName, LRPMIB = ...;
+
+local L = LRPMIB.L;
+
+local LRPM12 = LibStub:GetLibrary("LibRPMedia-1.2");
+
+local IconBrowserConstants = LRPMIB.IconBrowserConstants;
+
+local IconBrowserSearchTask = CreateFromMixins(CallbackRegistryMixin);
+
+function IconBrowserSearchTask:Init(predicate, model)
+	self:GenerateCallbackEvents({"OnStateChanged", "OnProgressChanged", "OnResultsChanged"})
+	self:OnLoad()
+	
+	self.state = "pending"
+	self.predicate = predicate
+	self.found = 0
+	self.searched = 0
+	self.iterator = model:EnumerateIcons({ reuseTable = {} })
+	self.total = model:GetIconCount()
+	self.step = math.min(500, math.ceil(model:GetIconCount() / 20))
+	self.results = {}
+end
+
+function IconBrowserSearchTask:Start()
+	self.ticker = C_Timer.NewTicker(0, function() self:OnUpdate(); end)
+	self.state = "running"
+	self:TriggerEvent("OnStateChanged", self.state)
+end
+
+function IconBrowserSearchTask:Finish()
+	if self.state == "finished" then return; end
+	if self.ticker then self.ticker:Cancel() end
+	self.ticker = nil
+	self.state = "finished"
+	self:TriggerEvent("OnStateChanged", self.state)
+end
+
+function IconBrowserSearchTask:OnUpdate()
+	local found, visited = self.found, self.searched
+	local limit = math.min(self.searched + self.step, self.total)
+
+	for iconIndex, iconInfo in self.iterator do
+		if self.predicate(iconIndex, iconInfo) then
+			found = found + 1;
+			self.results[found] = iconIndex;
+		end
+		visited = visited + 1
+		if visited > limit then break; end
+	end
+
+	if self.searched == 0 or self.found ~= found then
+		self.found = found;
+		self:TriggerEvent("OnResultsChanged", self.results);
+	end
+
+	self.searched = limit
+	self:TriggerEvent("OnProgressChanged", { found = self.found, searched = self.searched, total = self.total })
+
+	if self.searched >= self.total then
+		self:Finish();
+	end
+end
+
+
+------------------------------------------------------------------------------------------------------
+
+local IconBrowserModel = CreateFromMixins(CallbackRegistryMixin)
+
+function IconBrowserModel:Init()
+	self:GenerateCallbackEvents({"OnModelUpdated"})
+	self:OnLoad()
+end
+
+function IconBrowserModel:GetIconCount() return LRPM12:GetNumIcons() end
+function IconBrowserModel:GetIconInfo(index) return LRPM12:GetIconInfoByIndex(index) end
+function IconBrowserModel:EnumerateIcons(options) return LRPM12:EnumerateIcons(options) end
+
+
+------------------------------------------------------------------------------------------------------
+
+local IconBrowserSelectionModel = CreateFromMixins(CallbackRegistryMixin)
+
+function IconBrowserSelectionModel:Init(source)
+	self:GenerateCallbackEvents({"OnModelUpdated"})
+	self:OnLoad()
+	self.source = source
+	self.selectedFileID = nil
+	self.selectedIndex = nil
+	self.source:RegisterCallback("OnModelUpdated", function() self:RebuildModel(); end, self)
+end
+
+function IconBrowserSelectionModel:GetIconCount()
+	return self.source:GetIconCount();
+end
+
+function IconBrowserSelectionModel:GetSourceIndex(proxyIndex)
+	if not self.selectedIndex then return proxyIndex end
+	if proxyIndex == 1 then return self.selectedIndex end
+	if proxyIndex <= self.selectedIndex then return proxyIndex - 1 end
+	return proxyIndex
+end
+
+function IconBrowserSelectionModel:GetProxyIndex(sourceIndex)
+	if not self.selectedIndex then return sourceIndex end
+	if sourceIndex == self.selectedIndex then return 1 end
+	if sourceIndex < self.selectedIndex then return sourceIndex + 1 end
+	return sourceIndex
+end
+
+function IconBrowserSelectionModel:GetIconInfo(index)
+	local sourceIndex = self:GetSourceIndex(index)
+	return self.source:GetIconInfo(sourceIndex)
+end
+
+function IconBrowserSelectionModel:EnumerateIcons(options)
+	local iterator = self.source:EnumerateIcons(options)
+	local hasEnumeratedSelection = (self.selectedIndex == nil)
+
+	local function GetNextIcon()
+		if not hasEnumeratedSelection then
+			hasEnumeratedSelection = true;
+			return 1, self:GetIconInfo(1);
+		end
+
+		local sourceIndex, iconInfo = iterator()
+		if sourceIndex == self.selectedIndex then
+			sourceIndex, iconInfo = iterator();
+		end
+
+		if sourceIndex ~= nil then
+			return self:GetProxyIndex(sourceIndex), iconInfo;
+		end
+	end
+
+	return GetNextIcon
+end
+
+function IconBrowserSelectionModel:SetSelectedFileID(fileId)
+	if self.selectedFileID ~= fileId then
+		self.selectedFileID = fileId;
+		self:RebuildModel();
+	end
+end
+
+function IconBrowserSelectionModel:RebuildModel()
+	self.selectedIndex = nil
+	if self.selectedFileID then
+		for index, info in self.source:EnumerateIcons() do
+			if info.file == self.selectedFileID then
+				self.selectedIndex = index;
+				break;
+			end
+		end
+	end
+	self:TriggerEvent("OnModelUpdated")
+end
+
+
+------------------------------------------------------------------------------------------------------
+
+local IconBrowserFilterModel = CreateFromMixins(CallbackRegistryMixin)
+
+function IconBrowserFilterModel:Init(source)
+	self:GenerateCallbackEvents({"OnModelUpdated", "OnSearchStateChanged", "OnSearchProgressChanged"})
+	self:OnLoad()
+	self.source = source
+	self.sourceIndices = {}
+	self.searchQuery = ""
+	self.searchCategories = {}
+	
+	self.source:RegisterCallback("OnModelUpdated", function() self:RebuildModel() end, self)
+end
+
+function IconBrowserFilterModel:IsApplyingAnyFilter()
+	return self.searchQuery ~= "" or self:IsFilteringAnyCategory()
+end
+
+function IconBrowserFilterModel:GetIconCount()
+	return self:IsApplyingAnyFilter() and #self.sourceIndices or self.source:GetIconCount()
+end
+
+function IconBrowserFilterModel:GetIconInfo(proxyIndex)
+	local sourceIndex = self:IsApplyingAnyFilter() and self.sourceIndices[proxyIndex] or proxyIndex
+	return self.source:GetIconInfo(sourceIndex)
+end
+
+function IconBrowserFilterModel:SetSearchQuery(query)
+	query = string.lower(query)
+	if self.searchQuery ~= query then
+		self.searchQuery = query;
+		self:RebuildModel();
+	end
+end
+
+function IconBrowserFilterModel:ClearAllFilters()
+	self.searchQuery = ""
+	self.searchCategories = {}
+	self:RebuildModel()
+end
+
+function IconBrowserFilterModel:IsFilteringAnyCategory()
+	return next(self.searchCategories) ~= nil
+end
+
+function IconBrowserFilterModel:IsFilteringCategory(category)
+	return self.searchCategories[category] == true
+end
+
+function IconBrowserFilterModel:ToggleCategory(category)
+	if self.searchCategories[category] then
+		self.searchCategories[category] = nil;
+	else
+		self.searchCategories[category] = true;
+	end
+	self:RebuildModel()
+end
+
+function IconBrowserFilterModel:RebuildModel()
+	if self.searchTask then
+		self.searchTask:Finish();
+		self.searchTask = nil;
+	end
+
+	if not self:IsApplyingAnyFilter() then
+		self:TriggerEvent("OnModelUpdated");
+		return;
+	end
+
+	local query = self.searchQuery
+	local activeCategories = {}
+	
+	for category, isActive in pairs(self.searchCategories) do
+		if isActive then table.insert(activeCategories, category); end
+	end
+	
+	local categoryPredicate = #activeCategories > 0 and LRPM12:GenerateIconCategoryPredicate(activeCategories) or nil
+
+	local function DoesIconMatchFilters(_, iconInfo)
+		if categoryPredicate and not categoryPredicate(iconInfo.index) then
+			return false;
+		end
+
+		if query ~= "" then
+			local iconName = iconInfo.name and string.lower(iconInfo.name) or ""
+			if not string.find(iconName, query, 1, true) then
+				return false;
+			end
+		end
+
+		return true
+	end
+
+	self.searchTask = CreateAndInitFromMixin(IconBrowserSearchTask, DoesIconMatchFilters, self.source)
+	self.searchTask:RegisterCallback("OnStateChanged", function(_, state)
+		if state == "finished" then self.searchTask = nil; end
+		self:TriggerEvent("OnSearchStateChanged", state)
+	end, self)
+	
+	self.searchTask:RegisterCallback("OnProgressChanged", function(_, progress)
+		self:TriggerEvent("OnSearchProgressChanged", progress)
+	end, self)
+
+	self.searchTask:RegisterCallback("OnResultsChanged", function(_, results)
+		self.sourceIndices = results
+		self:TriggerEvent("OnModelUpdated")
+	end, self)
+
+	self.searchTask:Start()
+end
+
+
+------------------------------------------------------------------------------------------------------
+
+LRPMIB_IconBrowserButtonMixin = {}
+
+function LRPMIB_IconBrowserButtonMixin:OnLoad()
+	self:RegisterForClicks("LeftButtonUp")
+end
+
+function LRPMIB_IconBrowserButtonMixin:Init(iconInfo)
+	self.Icon:SetTexture(iconInfo and iconInfo.file or 134400)
+	local isSelected = self.browser and (self.browser.selectedFile == iconInfo.file)
+	self.SelectedTexture:SetShown(isSelected and true or false)
+end
+
+function LRPMIB_IconBrowserButtonMixin:OnClick()
+	local iconInfo = self:GetElementData()
+	if not iconInfo then return; end
+
+	local browser = self.browser
+	if browser and browser.OnIconSelected then
+		browser:OnIconSelected(iconInfo);
+	end
+end
+
+function LRPMIB_IconBrowserButtonMixin:OnEnter()
+	local iconInfo = self:GetElementData()
+	if not iconInfo then return; end
+	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+	GameTooltip:SetText(iconInfo.name or L["UnknownIcon"], 1, 1, 1)
+	GameTooltip:AddLine(string.format(L["FileID"], iconInfo.file), 0.44, 0.83, 1)
+	GameTooltip:Show()
+end
+
+function LRPMIB_IconBrowserButtonMixin:OnLeave()
+	GameTooltip:Hide()
+end
+
+LRPMIB_IconBrowserMixin = {}
+
+function LRPMIB_IconBrowserMixin:OnLoad()
+	self.baseModel = CreateAndInitFromMixin(IconBrowserModel)
+	self.selectionModel = CreateAndInitFromMixin(IconBrowserSelectionModel, self.baseModel)
+	self.filterModel = CreateAndInitFromMixin(IconBrowserFilterModel, self.selectionModel)
+	self.selectedFile = nil
+
+	local GRID_STRIDE = 9
+	local GRID_PADDING = 4
+
+	self.Content.ScrollView = CreateScrollBoxListGridView(GRID_STRIDE, GRID_PADDING, GRID_PADDING, GRID_PADDING, GRID_PADDING)
+	self.Content.ScrollView:SetElementInitializer("LRPMIB_IconBrowserButtonTemplate", function(button, iconInfo)
+		button.browser = self;
+		button:Init(iconInfo);
+	end)
+	ScrollUtil.InitScrollBoxListWithScrollBar(self.Content.ScrollBox, self.Content.ScrollBar, self.Content.ScrollView)
+
+	local scrollBoxAnchorsWithBar = {
+		AnchorUtil.CreateAnchor("TOPLEFT", self.Content, "TOPLEFT", 0, 0),
+		AnchorUtil.CreateAnchor("BOTTOMRIGHT", self.Content.ScrollBar, "BOTTOMLEFT", -4, 0),
+	};
+	local scrollBoxAnchorsWithoutBar = {
+		AnchorUtil.CreateAnchor("TOPLEFT", self.Content, "TOPLEFT", 0, 0),
+		AnchorUtil.CreateAnchor("BOTTOMRIGHT", self.Content, "BOTTOMRIGHT", 0, 0),
+	};
+	ScrollUtil.AddManagedScrollBarVisibilityBehavior(self.Content.ScrollBox, self.Content.ScrollBar, scrollBoxAnchorsWithBar, scrollBoxAnchorsWithoutBar)
+
+	local provider = CreateFromMixins(CallbackRegistryMixin)
+	provider:GenerateCallbackEvents({"OnSizeChanged"})
+	provider:OnLoad()
+
+	function provider:Enumerate(i, j)
+		i = i and (i - 1) or 0
+		j = j or self.model:GetIconCount()
+		return function(_, k)
+			k = k + 1;
+			if k <= j then return k, self.model:GetIconInfo(k); end
+		end, nil, i
+	end
+	function provider:Find(i) return self.model:GetIconInfo(i) end
+	function provider:GetSize() return self.model:GetIconCount() end
+	function provider:IsVirtual() return true end
+
+	provider.model = self.filterModel
+	self.filterModel:RegisterCallback("OnModelUpdated", function() provider:TriggerEvent("OnSizeChanged") end)
+	self.Content.ScrollBox:SetDataProvider(provider)
+	self.provider = provider
+
+	local timer
+	self.SearchBox:HookScript("OnTextChanged", function(box)
+		if timer then timer:Cancel(); end
+		timer = C_Timer.NewTimer(0.25, function() self.filterModel:SetSearchQuery(box:GetText()) end);
+	end)
+
+	self.filterModel:RegisterCallback("OnSearchStateChanged", function(_, state)
+		self.Content.ProgressOverlay:SetShown(state == "running");
+	end)
+	self.filterModel:RegisterCallback("OnSearchProgressChanged", function(_, progress)
+		self.Content.ProgressOverlay.ProgressBar:SetSmoothedValue(progress.searched / progress.total);
+	end)
+
+	self.FilterDropdown:SetIsDefaultCallback(function()
+		return not self.filterModel:IsApplyingAnyFilter();
+	end)
+	self.FilterDropdown:SetDefaultCallback(function()
+		self:OnFilterDropdownResetClicked();
+	end)
+	self.FilterDropdown:SetupMenu(function(dropdown, rootDescription)
+		self:SetupFilterDropdown(rootDescription);
+	end)
+
+	self:RegisterEvent("UPDATE_MACROS")
+end
+
+function LRPMIB_IconBrowserMixin:OnEvent(event, ...)
+	if event == "UPDATE_MACROS" and self:IsVisible() then
+		RunNextFrame(function()
+			self:UpdateSelection();
+		end)
+	end
+end
+
+function LRPMIB_IconBrowserMixin:UpdateSelection()
+	local popup = self:GetParent():GetParent()
+	if popup and popup.BorderBox and popup.BorderBox.SelectedIconArea then
+		local currentIcon = popup.BorderBox.SelectedIconArea.SelectedIconButton:GetIconTexture()
+		if currentIcon then
+			self.selectedFile = currentIcon;
+			self.selectionModel:SetSelectedFileID(currentIcon);
+			
+			if self.provider then
+				self.provider:TriggerEvent("OnSizeChanged");
+			end
+		end
+	end
+end
+
+function LRPMIB_IconBrowserMixin:SetupFilterDropdown(rootDescription)
+	local constants = IconBrowserConstants
+
+	local function IsSelected(category) return self.filterModel.searchCategories[category] end
+	local function ToggleCategory(category) self.filterModel:ToggleCategory(category) end
+	local function CreateCategoryCheckbox(parent, name, category)
+		parent:CreateCheckbox(name, function() return IsSelected(category) end, function() ToggleCategory(category) end);
+	end
+
+	if constants then
+		local function BuildSubMenu(parent, title, categoryTable)
+			if not categoryTable then return end
+			local menu = parent:CreateButton(title)
+			for _, catInfo in ipairs(categoryTable) do
+				local name = catInfo.name
+				if catInfo.color then
+					name = catInfo.color:WrapTextInColorCode(name);
+				end
+				CreateCategoryCheckbox(menu, name, catInfo.category);
+			end
+			return menu;
+		end
+
+		CreateCategoryCheckbox(rootDescription, L["ICON_CATEGORY_SPELLSABILITIES"], LRPM12.IconCategory.Ability)
+		CreateCategoryCheckbox(rootDescription, L["ICON_CATEGORY_ACHIEVEMENTS"], LRPM12.IconCategory.Achievement)
+		CreateCategoryCheckbox(rootDescription, L["ICON_CATEGORY_HOUSING"], LRPM12.IconCategory.Housing)
+		rootDescription:CreateDivider()
+
+		BuildSubMenu(rootDescription, L["ICON_CATEGORY_CLASSES"], constants.ClassCategories)
+		BuildSubMenu(rootDescription, L["ICON_CATEGORY_CULTURE"], constants.CultureCategories)
+
+		do
+			local menu = rootDescription:CreateButton(L["ICON_CATEGORY_WEAPON"]);
+			CreateCategoryCheckbox(menu, L["ICON_CATEGORY_ALLWEAPONS"], LRPM12.IconCategory.Weapon);
+			menu:CreateDivider();
+			menu:CreateTitle(L["ICON_CATEGORY_MELEEWEAPONS"]);
+			for _, catInfo in ipairs(constants.MeleeWeaponCategories) do
+				CreateCategoryCheckbox(menu, catInfo.name, catInfo.category);
+			end
+			menu:CreateDivider();
+			menu:CreateTitle(L["ICON_CATEGORY_RANGEDWEAPONS"]);
+			for _, catInfo in ipairs(constants.RangedWeaponCategories) do
+				CreateCategoryCheckbox(menu, catInfo.name, catInfo.category);
+			end
+		end
+
+		do
+			local menu = rootDescription:CreateButton(L["ICON_CATEGORY_ARMOR"]);
+			for _, catInfo in ipairs(constants.ArmorTypeCategories) do
+				CreateCategoryCheckbox(menu, catInfo.name, catInfo.category);
+			end
+			menu:CreateDivider();
+			menu:CreateTitle(L["ICON_CATEGORY_INVENTORYSLOTS"]);
+			for _, catInfo in ipairs(constants.InventorySlotCategories) do
+				CreateCategoryCheckbox(menu, catInfo.name, catInfo.category);
+			end
+		end
+
+		BuildSubMenu(rootDescription, L["ICON_CATEGORY_MAGIC"], constants.MagicCategories)
+		BuildSubMenu(rootDescription, L["ICON_CATEGORY_FACTIONS"], constants.FactionCategories)
+
+		do
+			local menu = rootDescription:CreateButton(L["ICON_CATEGORY_PROFESSION"]);
+			CreateCategoryCheckbox(menu, L["ICON_CATEGORY_ALLPROFESSIONS"], LRPM12.IconCategory.Professions);
+			menu:CreateDivider();
+			for _, catInfo in ipairs(constants.ProfessionCategories) do
+				CreateCategoryCheckbox(menu, catInfo.name, catInfo.category);
+			end
+		end
+
+		do
+			local menu = rootDescription:CreateButton(L["ICON_CATEGORY_ITEMS"]);
+			CreateCategoryCheckbox(menu, L["ICON_CATEGORY_ALLITEMS"], LRPM12.IconCategory.Item);
+			menu:CreateDivider();
+			for _, catInfo in ipairs(constants.ItemCategories) do
+				CreateCategoryCheckbox(menu, catInfo.name, catInfo.category);
+			end
+		end
+	else
+		CreateCategoryCheckbox(rootDescription, L["ICON_CATEGORY_SPELLSABILITIES"], LRPM12.IconCategory.Ability);
+		CreateCategoryCheckbox(rootDescription, L["ICON_CATEGORY_ITEMS"], LRPM12.IconCategory.Item);
+		CreateCategoryCheckbox(rootDescription, L["ICON_CATEGORY_WEAPON"], LRPM12.IconCategory.Weapon);
+		CreateCategoryCheckbox(rootDescription, L["ICON_CATEGORY_ARMOR"], LRPM12.IconCategory.ArmorType);
+		CreateCategoryCheckbox(rootDescription, L["ICON_CATEGORY_PROFESSION"], LRPM12.IconCategory.Professions);
+		CreateCategoryCheckbox(rootDescription, L["ICON_CATEGORY_ACHIEVEMENTS"], LRPM12.IconCategory.Achievement);
+	end
+end
+
+function LRPMIB_IconBrowserMixin:OnShow()
+	self.SearchBox:SetFocus()
+	
+	RunNextFrame(function()
+		self:UpdateSelection();
+	end)
+end
+
+function LRPMIB_IconBrowserMixin:OnFilterDropdownResetClicked()
+	self.filterModel:ClearAllFilters()
+	self.SearchBox:SetText("")
+end
+
+function LRPMIB_IconBrowserMixin:OnIconSelected(iconInfo)
+	if not iconInfo or not iconInfo.file then return end
+	local popup = self:GetParent():GetParent()
+
+	if popup and popup.BorderBox then
+		popup.BorderBox.SelectedIconArea.SelectedIconButton:SetIconTexture(iconInfo.file);
+
+		popup.selectedIconTexture = iconInfo.file;
+		popup.selectedIconIndex = nil;
+
+		if popup.SetSelectedIconText then
+			popup:SetSelectedIconText();
+		end
+
+		popup.BorderBox.OkayButton:Enable();
+	end
+
+	self.selectedFile = iconInfo.file
+	self.provider:TriggerEvent("OnSizeChanged")
+end
+
+
+------------------------------------------------------------------------------------------------------
+
+local events = {
+	"WORLD_CURSOR_TOOLTIP_UPDATE",
+	"CURSOR_CHANGED",
+	"ACTIONBAR_UPDATE_COOLDOWN",
+	"GLOBAL_MOUSE_DOWN",
+	"GLOBAL_MOUSE_UP",
+};
+
+--[[
+	it's not pretty, but it works for this use case
+	i'd like to replace this with something a bit nicer
+	
+	i actually tried to OnUpdate and hide it while the browser was shown
+	but it still resulted in "flickering" when the game set it shown
+	so that's why i set the alpha to 0
+--]]
+local LRPMIB_InjectedPopups = {};
+
+local function HideTheseDangFrames()
+	for _, popup in ipairs(LRPMIB_InjectedPopups) do
+		if popup.IconSelector then
+			popup.IconSelector:Hide();
+			popup.IconSelector:SetAlpha(0);
+		end
+		if popup.BorderBox and popup.BorderBox.IconTypeDropdown then
+			popup.BorderBox.IconTypeDropdown:Hide();
+			popup.BorderBox.IconTypeDropdown:SetAlpha(0);
+		end
+	end
+end
+
+local function InjectBrowser(popup, browserName)
+	if not popup or popup.LRPMIB_Browser then return end
+
+	local browser = CreateFrame("Frame", browserName, popup.BorderBox, "LRPMIB_IconBrowserFrameTemplate")
+	popup.LRPMIB_Browser = browser
+	
+	local topAnchorFrame = popup.BorderBox.IconSelectorEditBox
+	local yOffset = -10
+	local xOffset = -5
+
+	-- bank frame is a little different because of extra settings
+	if popup.DepositSettingsMenu then
+		topAnchorFrame = popup.DepositSettingsMenu;
+		xOffset = 7.5;
+		yOffset = -5;
+	end
+
+	browser:SetPoint("TOPLEFT", topAnchorFrame, "BOTTOMLEFT", xOffset, yOffset)
+	browser:SetPoint("BOTTOMRIGHT", popup.BorderBox, "BOTTOMRIGHT", -5, 40)
+	
+	popup:HookScript("OnShow", function()
+		HideTheseDangFrames();
+		browser:Show();
+	end)
+
+	-- the will be overlapped by the search bar othewise
+	if popup.BorderBox.IconSelectionText then
+		local point, relativeTo, relativePoint, x, y = popup.BorderBox.IconSelectionText:GetPoint(1)
+		if point then
+			popup.BorderBox.IconSelectionText:ClearAllPoints();
+			popup.BorderBox.IconSelectionText:SetPoint(point, relativeTo, relativePoint, x, (y or 0) - 10);
+		end
+	end
+
+	table.insert(LRPMIB_InjectedPopups, popup);
+end
+
+for k, v in pairs(events) do
+	EventRegistry:RegisterFrameEventAndCallback(v, function() RunNextFrame(HideTheseDangFrames) end)
+end
+
+EventUtil.ContinueOnAddOnLoaded("Blizzard_MacroUI", function()
+	InjectBrowser(MacroPopupFrame, "LRPMIB_MacroIconBrowser");
+end)
+
+EventUtil.ContinueOnAddOnLoaded("Blizzard_GuildBankUI", function()
+	if GuildBankPopupFrame then
+		InjectBrowser(GuildBankPopupFrame, "LRPMIB_GuildBankIconBrowser");
+	end
+end)
+
+EventUtil.ContinueOnAddOnLoaded("Blizzard_Transmog", function()
+	if TransmogFrame and TransmogFrame.OutfitPopup then
+		InjectBrowser(TransmogFrame.OutfitPopup, "LRPMIB_TransmogIconBrowser");
+	elseif WardrobeOutfitEditFrame then
+		InjectBrowser(WardrobeOutfitEditFrame, "LRPMIB_TransmogIconBrowser");
+	end
+end)
+
+local function InjectBaseFrames()
+	if GearManagerPopupFrame then
+		InjectBrowser(GearManagerPopupFrame, "LRPMIB_GearManagerIconBrowser");
+	end
+	if BankFrame and BankFrame.BankPanel and BankFrame.BankPanel.TabSettingsMenu then
+		InjectBrowser(BankFrame.BankPanel.TabSettingsMenu, "LRPMIB_BankTabIconBrowser");
+	end
+end
+
+InjectBaseFrames()
+local baseUILoader = CreateFrame("Frame")
+baseUILoader:RegisterEvent("PLAYER_LOGIN")
+baseUILoader:SetScript("OnEvent", function()
+	InjectBaseFrames()
+end)

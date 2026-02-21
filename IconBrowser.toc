@@ -1,0 +1,53 @@
+## Interface: 120000, 120001
+## Author: Keyboardturner
+## Version: @project-version@
+## Title: Icon Browser
+## Notes: A replacement icon browser for macros, bank, and transmog with a search bar and preset filters.
+## IconTexture: 
+## X-Curse-Project-ID: 
+## X-WoWI-ID: 
+## X-Wago-ID: 
+
+## Title-enUS: Icon Browser
+## Notes-enUS: A replacement icon browser for macros, bank, and transmog with a search bar and preset filters.
+## Title-esMX: Navegador de iconos (Icon Browser)
+## Notes-esMX: Un navegador de iconos alternativo para macros, banco y transfiguración con una barra de búsqueda y filtros preestablecidos.
+## Title-esES: Navegador de iconos (Icon Browser)
+## Notes-esES: Un navegador de iconos alternativo para macros, banco y transfiguración con una barra de búsqueda y filtros preestablecidos.
+## Title-deDE: Symbolbrowser (Icon Browser)
+## Notes-deDE: Ein Ersatz-Iconbrowser für Makros, Bank und Transmog mit Suchleiste und voreingestellten Filtern.
+## Title-frFR: Navigateur d’icônes (Icon Browser)
+## Notes-frFR: Un navigateur d’icônes de remplacement pour macros, banque et transmogrification avec une barre de recherche et des filtres prédéfinis.
+## Title-itIT: Browser delle icone (Icon Browser)
+## Notes-itIT: Un browser di icone sostitutivo per macro, banca e trasmogrificazione con una barra di ricerca e filtri preimpostati.
+## Title-ptBR: Navegador de ícones (Icon Browser)
+## Notes-ptBR: Um navegador de ícones substituto para macros, banco e transmogrificação com barra de pesquisa e filtros predefinidos.
+## Title-ruRU: Браузер значков (Icon Browser)
+## Notes-ruRU: Замена браузера значков для макросов, банка и трансмогрификации с строкой поиска и предустановленными фильтрами.
+## Title-koKR: 아이콘 브라우저 (Icon Browser)
+## Notes-koKR: 매크로, 은행, 형상변환용 아이콘 브라우저 대체, 검색창과 사전 설정 필터 포함.
+## Title-zhCN: 图标浏览器 (Icon Browser)
+## Notes-zhCN: 用于宏、银行和幻化的图标浏览器替代工具，带搜索栏和预设过滤器。
+## Title-zhTW: 圖示瀏覽器 (Icon Browser)
+## Notes-zhTW: 用於巨集、銀行與塑形的圖示瀏覽器替代工具，含搜尋欄與預設過濾條件。
+
+## Category: Other
+## Category-enUS: Other
+## Category-deDE: Anderes
+## Category-esES: Otros
+## Category-esMX: Otros
+## Category-frFR: Autre
+## Category-itIT: Altro
+## Category-koKR: 기타
+## Category-ptBR: Outro
+## Category-ruRU: Другое
+## Category-zhCN: 其它
+## Category-zhTW: 其他
+
+Libs\LibStub\LibStub.lua
+Libs\LibRPMedia\lib.xml
+
+Localization.lua
+IconBrowserConstants.lua
+IconBrowser.xml
+IconBrowser.lua
