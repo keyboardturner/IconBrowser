@@ -665,6 +665,78 @@ EventUtil.ContinueOnAddOnLoaded("Baganator", function()
 	end)
 end)
 
+EventUtil.ContinueOnAddOnLoaded("MacroToolkit", function()
+	local MT = _G.MacroToolkit
+	if not MT then return end
+	
+	local function InjectMTBrowser()
+		local popup = _G.MacroToolkitPopup;
+		if not popup or popup.LRPMIB_Browser then return; end
+		
+		local origGetIcon = MT.GetSpellorMacroIconInfo;
+		MT.GetSpellorMacroIconInfo = function(self, index)
+			local texture = origGetIcon(self, index);
+			if not texture and popup.selectedIcon == index then
+				return index;
+			end
+			return texture;
+		end
+
+		popup:HookScript("OnShow", function()
+			if _G.MacroToolkitPopupGoLarge then
+				_G.MacroToolkitPopupGoLarge:Hide();
+				_G.MacroToolkitPopupGoLarge:SetAlpha(0);
+			end
+			if _G.MacroToolkitPopupIcons then
+				_G.MacroToolkitPopupIcons:Hide();
+				_G.MacroToolkitPopupIcons:SetAlpha(0);
+			end
+			if _G.MacroToolkitSearchBox then
+				_G.MacroToolkitSearchBox:Hide();
+				_G.MacroToolkitSearchBox:SetAlpha(0);
+			end
+			if _G.MacroToolkitSpellCheck then
+				_G.MacroToolkitSpellCheck:Hide();
+				_G.MacroToolkitSpellCheck:SetAlpha(0);
+			end
+			MT.golarge();
+
+			if popup.LRPMIB_Browser then
+				popup.LRPMIB_Browser:Show();
+				popup.LRPMIB_Browser:UpdateSelection();
+			end
+
+		end)
+		
+		local function OnIconSelected(fileID, iconInfo)
+			_G.MacroToolkitSelMacroButton.Icon:SetTexture(fileID);
+			popup.selectedIconTexture = fileID;
+			popup.selectedIcon = fileID;
+			MT:PopupOkayUpdate();
+		end
+		
+		local browser = _G.LRPMediaIconBrowserAPI.CreateBrowser(popup, _G.MacroToolkitPopupEdit, 260, 270, OnIconSelected)
+		popup.LRPMIB_Browser = browser
+		
+		browser:ClearAllPoints()
+		browser:SetPoint("TOPLEFT", _G.MacroToolkitPopupEdit, "BOTTOMLEFT", -10, -35)
+		browser:SetPoint("BOTTOMRIGHT", popup, "BOTTOMRIGHT", 0, 45)
+
+		browser.UpdateSelection = function(self)
+			if popup.selectedIconTexture then
+				self.selectedFile = popup.selectedIconTexture;
+				self.selectionModel:SetSelectedFileID(popup.selectedIconTexture);
+			end
+		end
+	end
+	
+	if _G.MacroToolkitPopup then
+		InjectMTBrowser();
+	else
+		hooksecurefunc(MT, "CreateMTPopup", InjectMTBrowser);
+	end
+end)
+
 
 -- some Global API stuff for other people to use the browser for their own addons
 ------------------------------------------------------------------------------------------------------
@@ -721,37 +793,37 @@ MyCustomFrame:SetScript("OnDragStop", MyCustomFrame.StopMovingOrSizing)
 local PreviewIcon = MyCustomFrame:CreateTexture(nil, "ARTWORK")
 PreviewIcon:SetSize(64, 64)
 PreviewIcon:SetPoint("TOP", MyCustomFrame, "TOP", 0, -40)
-PreviewIcon:SetTexture(134400) 
+PreviewIcon:SetTexture(134400)
 
 MyCustomFrame:SetScript("OnShow", function(self)
-    if not self.iconBrowser and _G.LRPMediaIconBrowserAPI then
-        
-        local function OnIconSelected(fileID, iconInfo)
-            PreviewIcon:SetTexture(fileID);
-            DevTools_Dump(iconInfo);
-        end
+	if not self.iconBrowser and _G.LRPMediaIconBrowserAPI then
+		
+		local function OnIconSelected(fileID, iconInfo)
+			PreviewIcon:SetTexture(fileID);
+			DevTools_Dump(iconInfo);
+		end
 
-        self.iconBrowser = _G.LRPMediaIconBrowserAPI.CreateBrowser(self, PreviewIcon, 480, 320, OnIconSelected)
-        
-        self.iconBrowser:ClearAllPoints()
-        self.iconBrowser:SetPoint("TOP", PreviewIcon, "BOTTOM", 0, -20)
-        self.iconBrowser:SetPoint("BOTTOM", self, "BOTTOM", 0, 10)
-        
-        self.iconBrowser:Show()
-        
-    elseif not _G.LRPMediaIconBrowserAPI then
-        print("LRPMediaIconBrowserAPI is not loaded! Make sure the addon is enabled.");
-    end
+		self.iconBrowser = _G.LRPMediaIconBrowserAPI.CreateBrowser(self, PreviewIcon, 480, 320, OnIconSelected)
+		
+		self.iconBrowser:ClearAllPoints()
+		self.iconBrowser:SetPoint("TOP", PreviewIcon, "BOTTOM", 0, -20)
+		self.iconBrowser:SetPoint("BOTTOM", self, "BOTTOM", 0, 10)
+		
+		self.iconBrowser:Show()
+		
+	elseif not _G.LRPMediaIconBrowserAPI then
+		print("LRPMediaIconBrowserAPI is not loaded! Make sure the addon is enabled.");
+	end
 end)
 
 SLASH_MYICONBROWSER1 = "/iconbrowser"
 
 SlashCmdList["MYICONBROWSER"] = function(msg)
-    if MyCustomFrame:IsShown() then
-        MyCustomFrame:Hide();
-    else
-        MyCustomFrame:Show();
-    end
+	if MyCustomFrame:IsShown() then
+		MyCustomFrame:Hide();
+	else
+		MyCustomFrame:Show();
+	end
 end
 
 ]]
