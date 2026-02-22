@@ -328,7 +328,9 @@ function LRPMIB_IconBrowserMixin:OnLoad()
 	local GRID_STRIDE = 9
 	local GRID_PADDING = 4
 
-	self.Content.ScrollView = CreateScrollBoxListGridView(GRID_STRIDE, GRID_PADDING, GRID_PADDING, GRID_PADDING, GRID_PADDING)
+	local initialStride = self.strideOverride or GRID_STRIDE
+
+	self.Content.ScrollView = CreateScrollBoxListGridView(initialStride, GRID_PADDING, GRID_PADDING, GRID_PADDING, GRID_PADDING)
 	self.Content.ScrollView:SetElementInitializer("LRPMIB_IconBrowserButtonTemplate", function(button, iconInfo)
 		button.browser = self;
 		button:Init(iconInfo);
@@ -365,6 +367,16 @@ function LRPMIB_IconBrowserMixin:OnLoad()
 	self.filterModel:RegisterCallback("OnModelUpdated", function() provider:TriggerEvent("OnSizeChanged") end)
 	self.Content.ScrollBox:SetDataProvider(provider)
 	self.provider = provider
+
+	self.Content.ScrollBox:HookScript("OnSizeChanged", function(scrollBox)
+		local newStride = self.strideOverride or GRID_STRIDE;
+		if self.Content.ScrollView.stride ~= newStride then
+			self.Content.ScrollView.stride = newStride;
+			if self.provider then
+				self.provider:TriggerEvent("OnSizeChanged");
+			end
+		end
+	end)
 
 	local timer
 	self.SearchBox:HookScript("OnTextChanged", function(box)
@@ -716,10 +728,11 @@ EventUtil.ContinueOnAddOnLoaded("MacroToolkit", function()
 		end
 		
 		local browser = _G.LRPMediaIconBrowserAPI.CreateBrowser(popup, _G.MacroToolkitPopupEdit, 260, 270, OnIconSelected)
+		browser.strideOverride = 8
 		popup.LRPMIB_Browser = browser
 		
 		browser:ClearAllPoints()
-		browser:SetPoint("TOPLEFT", _G.MacroToolkitPopupEdit, "BOTTOMLEFT", -10, -35)
+		browser:SetPoint("TOPLEFT", _G.MacroToolkitPopupEdit, "BOTTOMLEFT", -15, -35)
 		browser:SetPoint("BOTTOMRIGHT", popup, "BOTTOMRIGHT", 0, 45)
 
 		browser.UpdateSelection = function(self)
@@ -751,6 +764,7 @@ _G.LRPMediaIconBrowserAPI = {}
 	width - the width of the browser window
 	height - the height of the browser window
 	onSelectCallback - fired when the clicking an icon, passes (fileID, iconInfo)
+	browser.strideOverride - change the grid row icon count, default 9 (it's kind of the intended size)
 --]]
 function _G.LRPMediaIconBrowserAPI.CreateBrowser(parentFrame, anchorFrame, width, height, onSelectCallback)
 	if not parentFrame then return nil end
