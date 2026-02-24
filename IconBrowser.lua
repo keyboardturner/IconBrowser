@@ -169,6 +169,142 @@ end
 
 ------------------------------------------------------------------------------------------------------
 
+local IconBrowserPinnedModel = CreateFromMixins(CallbackRegistryMixin)
+
+function IconBrowserPinnedModel:Init(source)
+	self:GenerateCallbackEvents({"OnModelUpdated"})
+	self:OnLoad()
+	self.source = source
+	self.pinnedFileIDs = {}
+	self.proxyToSource = nil
+	self.pinnedSourceSet = {}
+	self.pinnedCount = 0
+	self.source:RegisterCallback("OnModelUpdated", function() self:RebuildModel() end, self)
+end
+
+function IconBrowserPinnedModel:SetPinnedFileIDs(fileIDs)
+	local seen = {}
+	local deduped = {}
+	for _, fid in ipairs(fileIDs or {}) do
+		if fid and fid ~= 0 and not seen[fid] then
+			seen[fid] = true
+			table.insert(deduped, fid);
+		end
+	end
+	self.pinnedFileIDs = deduped
+	self:RebuildModel()
+end
+
+function IconBrowserPinnedModel:RebuildModel()
+	if #self.pinnedFileIDs == 0 then
+		self.proxyToSource = nil;
+		self.pinnedSourceSet = {};
+		self.pinnedCount = 0;
+		self:TriggerEvent("OnModelUpdated");
+		return;
+	end
+
+	local wantedSet = {}
+	for _, fid in ipairs(self.pinnedFileIDs) do
+		wantedSet[fid] = true;
+	end
+
+	local fileIDToSourceIndex = {}
+	local remaining = #self.pinnedFileIDs
+	for index, info in self.source:EnumerateIcons() do
+		if wantedSet[info.file] and not fileIDToSourceIndex[info.file] then
+			fileIDToSourceIndex[info.file] = index;
+			remaining = remaining - 1;
+			if remaining == 0 then break; end
+		end
+	end
+
+	local pinnedSourceIndices = {}
+	local pinnedSourceSet = {}
+	for _, fid in ipairs(self.pinnedFileIDs) do
+		local si = fileIDToSourceIndex[fid];
+		if si then
+			table.insert(pinnedSourceIndices, si);
+			pinnedSourceSet[si] = true;
+		end
+	end
+
+	if #pinnedSourceIndices == 0 then
+		self.proxyToSource = nil;
+		self.pinnedSourceSet = {};
+		self.pinnedCount = 0;
+		self:TriggerEvent("OnModelUpdated");
+		return;
+	end
+
+	local proxyToSource = {}
+	for i, si in ipairs(pinnedSourceIndices) do
+		proxyToSource[i] = si;
+	end
+	local pi = #pinnedSourceIndices + 1
+	for si = 1, self.source:GetIconCount() do
+		if not pinnedSourceSet[si] then
+			proxyToSource[pi] = si;
+			pi = pi + 1;
+		end
+	end
+
+	self.proxyToSource = proxyToSource
+	self.pinnedSourceSet = pinnedSourceSet
+	self.pinnedCount = #pinnedSourceIndices
+	self:TriggerEvent("OnModelUpdated")
+end
+
+function IconBrowserPinnedModel:GetIconCount()
+	return self.source:GetIconCount();
+end
+
+function IconBrowserPinnedModel:GetIconInfo(proxyIndex)
+	if not self.proxyToSource then
+		return self.source:GetIconInfo(proxyIndex);
+	end
+	local si = self.proxyToSource[proxyIndex]
+	return si and self.source:GetIconInfo(si) or nil
+end
+
+function IconBrowserPinnedModel:EnumerateIcons(options)
+	if not self.proxyToSource then
+		return self.source:EnumerateIcons(options);
+	end
+
+	local pinnedCount = self.pinnedCount
+	local proxyToSource = self.proxyToSource
+	local pinnedSourceSet = self.pinnedSourceSet
+	local source = self.source
+	local phase = 1
+	local pinnedIdx = 0
+	local sourceIterator = nil
+	local nonPinnedProxy = pinnedCount
+
+	return function()
+		if phase == 1 then
+			pinnedIdx = pinnedIdx + 1;
+			if pinnedIdx <= pinnedCount then
+				return pinnedIdx, source:GetIconInfo(proxyToSource[pinnedIdx]);
+			end
+			phase = 2;
+			sourceIterator = source:EnumerateIcons(options);
+		end
+
+		local si, info = sourceIterator()
+		while si ~= nil and pinnedSourceSet[si] do
+			si, info = sourceIterator();
+		end
+		if si ~= nil then
+			nonPinnedProxy = nonPinnedProxy + 1;
+			return nonPinnedProxy, info;
+		end
+	end
+end
+
+
+------------------------------------------------------------------------------------------------------
+
 local IconBrowserFilterModel = CreateFromMixins(CallbackRegistryMixin)
 
 function IconBrowserFilterModel:Init(source)
@@ -321,7 +457,8 @@ LRPMIB_IconBrowserMixin = {}
 
 function LRPMIB_IconBrowserMixin:OnLoad()
 	self.baseModel = CreateAndInitFromMixin(IconBrowserModel)
-	self.selectionModel = CreateAndInitFromMixin(IconBrowserSelectionModel, self.baseModel)
+	self.pinnedModel = CreateAndInitFromMixin(IconBrowserPinnedModel, self.baseModel)
+	self.selectionModel = CreateAndInitFromMixin(IconBrowserSelectionModel, self.pinnedModel)
 	self.filterModel = CreateAndInitFromMixin(IconBrowserFilterModel, self.selectionModel)
 	self.selectedFile = nil
 
@@ -515,6 +652,10 @@ function LRPMIB_IconBrowserMixin:SetupFilterDropdown(rootDescription)
 	end
 end
 
+function LRPMIB_IconBrowserMixin:SetPinnedFileIDs(fileIDs)
+	self.pinnedModel:SetPinnedFileIDs(fileIDs);
+end
+
 function LRPMIB_IconBrowserMixin:OnShow()
 	self.SearchBox:SetFocus()
 	
@@ -641,11 +782,31 @@ EventUtil.ContinueOnAddOnLoaded("Blizzard_GuildBankUI", function()
 end)
 
 EventUtil.ContinueOnAddOnLoaded("Blizzard_Transmog", function()
-	if TransmogFrame and TransmogFrame.OutfitPopup then
-		InjectBrowser(TransmogFrame.OutfitPopup, "LRPMIB_TransmogIconBrowser");
-	elseif WardrobeOutfitEditFrame then
-		InjectBrowser(WardrobeOutfitEditFrame, "LRPMIB_TransmogIconBrowser");
+	local popup = (TransmogFrame and TransmogFrame.OutfitPopup) or WardrobeOutfitEditFrame
+	if not popup then return; end
+
+	local browserName = "LRPMIB_TransmogIconBrowser"
+	InjectBrowser(popup, browserName)
+
+	local browser = popup.LRPMIB_Browser
+	if not browser then return; end
+
+	local function RefreshOutfitPins()
+		local pinnedFileIDs = {};
+		if TransmogFrame and TransmogFrame.GetViewedOutfitIcons then
+			local icons = TransmogFrame:GetViewedOutfitIcons();
+			if icons then
+				for _, fileID in ipairs(icons) do
+					if fileID and fileID ~= 0 then
+						table.insert(pinnedFileIDs, fileID);
+					end
+				end
+			end
+		end
+		browser:SetPinnedFileIDs(pinnedFileIDs);
 	end
+
+	popup:HookScript("OnShow", RefreshOutfitPins);
 end)
 
 local function InjectBaseFrames()
