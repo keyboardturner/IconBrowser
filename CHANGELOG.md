@@ -1,5 +1,11 @@
 [Full Changelog & Previous Releases](https://github.com/keyboardturner/IconBrowser/releases)
 
+# 0.0.5
+
+Added functionality to search by icon file ID
+
+Adjusted how the macro frame icon selection is replaced for ElvUI compatibility
+
 # 0.0.4
 
 Made transmog outfit item icons in the selected outfit show up as the top default results in the icon picker

@@ -389,7 +389,11 @@ function IconBrowserFilterModel:RebuildModel()
 
 		if query ~= "" then
 			local iconName = iconInfo.name and string.lower(iconInfo.name) or ""
-			if not string.find(iconName, query, 1, true) then
+			local fileIDStr = iconInfo.file and tostring(iconInfo.file) or ""
+			local matchesName = string.find(iconName, query, 1, true)
+			local matchesFile = string.find(fileIDStr, query, 1, true)
+
+			if not (matchesName or matchesFile) then
 				return false;
 			end
 		end
@@ -772,7 +776,18 @@ for k, v in pairs(events) do
 end
 
 EventUtil.ContinueOnAddOnLoaded("Blizzard_MacroUI", function()
-	InjectBrowser(MacroPopupFrame, "LRPMIB_MacroIconBrowser");
+	MacroPopupFrame:HookScript("OnShow", function(popup)
+		if popup.LRPMIB_Browser then return end
+
+		InjectBrowser(popup, "LRPMIB_MacroIconBrowser")
+
+		if popup.LRPMIB_Browser then
+			RunNextFrame(function()
+				HideTheseDangFrames()
+				popup.LRPMIB_Browser:Show()
+			end)
+		end
+	end)
 end)
 
 EventUtil.ContinueOnAddOnLoaded("Blizzard_GuildBankUI", function()
