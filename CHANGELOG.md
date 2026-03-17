@@ -4,6 +4,8 @@
 
 Added functionality to search by icon file ID
 
+Adjusted name searching to strip special characters like underscores and spaces to better match results
+
 Adjusted how the macro frame icon selection is replaced for ElvUI compatibility
 
 # 0.0.4

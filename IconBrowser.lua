@@ -333,6 +333,8 @@ end
 
 function IconBrowserFilterModel:SetSearchQuery(query)
 	query = string.lower(query)
+	query = string.gsub(query, "[%s_%-]", "")
+	
 	if self.searchQuery ~= query then
 		self.searchQuery = query;
 		self:RebuildModel();
@@ -389,6 +391,8 @@ function IconBrowserFilterModel:RebuildModel()
 
 		if query ~= "" then
 			local iconName = iconInfo.name and string.lower(iconInfo.name) or ""
+			iconName = string.gsub(iconName, "[%s_%-]", "")
+			
 			local fileIDStr = iconInfo.file and tostring(iconInfo.file) or ""
 			local matchesName = string.find(iconName, query, 1, true)
 			local matchesFile = string.find(fileIDStr, query, 1, true)
