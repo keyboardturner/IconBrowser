@@ -59,16 +59,14 @@ function IconBrowserSearchTask:OnUpdate()
 		if visited > limit then break; end
 	end
 
-	if self.searched == 0 or self.found ~= found then
-		self.found = found;
-		self:TriggerEvent("OnResultsChanged", self.results);
-	end
-
+	self.found = found
 	self.searched = limit
+	
 	self:TriggerEvent("OnProgressChanged", { found = self.found, searched = self.searched, total = self.total })
 
 	if self.searched >= self.total then
-		self:Finish();
+		self:TriggerEvent("OnResultsChanged", self.results)
+		self:Finish()
 	end
 end
 
