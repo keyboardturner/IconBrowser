@@ -1,5 +1,9 @@
 [Full Changelog & Previous Releases](https://github.com/keyboardturner/IconBrowser/releases)
 
+# 0.0.5a
+
+Testing fix to exceeded execution time limit error
+
 # 0.0.5
 
 Added functionality to search by icon file ID
