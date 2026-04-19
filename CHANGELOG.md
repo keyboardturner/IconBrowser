@@ -1,5 +1,9 @@
 [Full Changelog & Previous Releases](https://github.com/keyboardturner/IconBrowser/releases)
 
+# 0.0.6
+
+12.0.5 toc update
+
 # 0.0.5a
 
 Testing fix to exceeded execution time limit error
