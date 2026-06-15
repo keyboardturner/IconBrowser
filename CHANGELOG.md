@@ -1,5 +1,9 @@
 [Full Changelog & Previous Releases](https://github.com/keyboardturner/IconBrowser/releases)
 
+# 0.0.7
+
+12.0.7 toc update
+
 # 0.0.6
 
 12.0.5 toc update
