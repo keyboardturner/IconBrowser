@@ -75,14 +75,173 @@ end
 
 local IconBrowserModel = CreateFromMixins(CallbackRegistryMixin)
 
-function IconBrowserModel:Init()
-	self:GenerateCallbackEvents({"OnModelUpdated"})
-	self:OnLoad()
+local CategoryNameByValue = {};
+for name, value in pairs(LRPM12.IconCategory) do
+	CategoryNameByValue[value] = name;
 end
 
-function IconBrowserModel:GetIconCount() return LRPM12:GetNumIcons() end
-function IconBrowserModel:GetIconInfo(index) return LRPM12:GetIconInfoByIndex(index) end
-function IconBrowserModel:EnumerateIcons(options) return LRPM12:EnumerateIcons(options) end
+local KNOWN_CATEGORY_PREFIXES = { "InventorySlot", "WeaponType" };
+local KNOWN_CATEGORY_SUFFIXES = { "Magic", "Armor" };
+
+local function DeriveDefaultToken(categoryName)
+	for _, prefix in ipairs(KNOWN_CATEGORY_PREFIXES) do
+		if categoryName:sub(1, #prefix) == prefix then
+			categoryName = categoryName:sub(#prefix + 1);
+			break;
+		end
+	end
+
+	for _, suffix in ipairs(KNOWN_CATEGORY_SUFFIXES) do
+		if #categoryName > #suffix and categoryName:sub(-#suffix) == suffix then
+			categoryName = categoryName:sub(1, -#suffix - 1);
+			break;
+		end
+	end
+
+	return string.lower(categoryName);
+end
+
+local function BuildCategoryTokenMap(categoryList, tokenMap)
+	tokenMap = tokenMap or {};
+	if not categoryList then return tokenMap; end
+
+	for _, entry in ipairs(categoryList) do
+		local categoryName = CategoryNameByValue[entry.category];
+		if categoryName then
+			tokenMap[DeriveDefaultToken(categoryName)] = entry.category;
+		end
+
+		if entry.tokens then
+			for _, token in ipairs(entry.tokens) do
+				tokenMap[string.lower(token)] = entry.category;
+			end
+		end
+	end
+
+	return tokenMap;
+end
+
+local ClassCategoryByToken = BuildCategoryTokenMap(IconBrowserConstants.ClassCategories);
+local GenericCategoryByToken = {};
+BuildCategoryTokenMap(IconBrowserConstants.CultureCategories, GenericCategoryByToken);
+BuildCategoryTokenMap(IconBrowserConstants.MeleeWeaponCategories, GenericCategoryByToken);
+BuildCategoryTokenMap(IconBrowserConstants.RangedWeaponCategories, GenericCategoryByToken);
+BuildCategoryTokenMap(IconBrowserConstants.ArmorTypeCategories, GenericCategoryByToken);
+BuildCategoryTokenMap(IconBrowserConstants.InventorySlotCategories, GenericCategoryByToken);
+BuildCategoryTokenMap(IconBrowserConstants.MagicCategories, GenericCategoryByToken);
+BuildCategoryTokenMap(IconBrowserConstants.FactionCategories, GenericCategoryByToken);
+BuildCategoryTokenMap(IconBrowserConstants.ProfessionCategories, GenericCategoryByToken);
+BuildCategoryTokenMap(IconBrowserConstants.ItemCategories, GenericCategoryByToken);
+
+local function DetectCategoriesFromName(name, categories, seenCategories)
+	if not name then return; end
+
+	local function AddCategory(category)
+		if category and not seenCategories[category] then
+			seenCategories[category] = true;
+			table.insert(categories, category);
+		end
+	end
+
+	local classToken = string.match(name, "ability_(%a+)_") or string.match(name, "ability_(%a+)$");
+	if classToken then
+		AddCategory(ClassCategoryByToken[classToken]);
+	end
+
+	for token, category in pairs(GenericCategoryByToken) do
+		if string.find(name, token, 1, true) then
+			AddCategory(category);
+		end
+	end
+end
+
+
+function IconBrowserModel:Init()
+	self:GenerateCallbackEvents({"OnModelUpdated"});
+	self:OnLoad();
+
+	-- blizz removed a lot of icon names
+	self.customIcons = {};
+	local seen = {};
+
+	local function ProcessMissingIcons(iconList, categoryFlag)
+		if not iconList then return; end
+		for _, fileID in ipairs(iconList) do
+			if not seen[fileID] then
+				seen[fileID] = true;
+				
+				-- encrypted files will also show up as true currently
+				if C_UIFileAsset.IsKnownFile(fileID) then
+					local name = LRPMIB.ListfileIconNames and LRPMIB.ListfileIconNames[fileID] or nil;
+					local categories = { categoryFlag };
+					local seenCategories = { [categoryFlag] = true };
+					DetectCategoriesFromName(name, categories, seenCategories);
+
+					table.insert(self.customIcons, {
+						file = fileID,
+						name = name,
+						categories = categories,
+					});
+				end
+			end
+		end
+	end
+
+	ProcessMissingIcons(LRPMIB.MissingItemIcons, LRPM12.IconCategory.Item);
+	ProcessMissingIcons(LRPMIB.MissingActionIcons, LRPM12.IconCategory.Ability);
+
+	table.sort(self.customIcons, function(a, b)
+		return a.file < b.file;
+	end)
+end
+
+function IconBrowserModel:GetIconCount()
+	return LRPM12:GetNumIcons() + #self.customIcons;
+end
+
+function IconBrowserModel:GetIconInfo(index)
+	local baseCount = LRPM12:GetNumIcons();
+	
+	if index <= baseCount then
+		return LRPM12:GetIconInfoByIndex(index);
+	end
+	
+	local customIcon = self.customIcons[index - baseCount];
+	if customIcon then
+		return {
+			index = index,
+			file = customIcon.file,
+			name = customIcon.name,
+			categories = customIcon.categories
+		};
+	end
+end
+
+function IconBrowserModel:EnumerateIcons(options)
+	local baseIterator = LRPM12:EnumerateIcons(options);
+	local baseCount = LRPM12:GetNumIcons();
+	local customIndex = 0;
+	local customIcons = self.customIcons;
+
+	return function()
+		local baseIndex, baseInfo = baseIterator();
+		if baseIndex ~= nil then
+			return baseIndex, baseInfo;
+		end
+
+		customIndex = customIndex + 1;
+		if customIndex <= #customIcons then
+			local proxyIndex = baseCount + customIndex;
+			local icon = customIcons[customIndex];
+			return proxyIndex, {
+				index = proxyIndex,
+				file = icon.file,
+				name = icon.name,
+				categories = icon.categories
+			};
+		end
+	end
+end
 
 
 ------------------------------------------------------------------------------------------------------
@@ -381,10 +540,35 @@ function IconBrowserFilterModel:RebuildModel()
 	end
 	
 	local categoryPredicate = #activeCategories > 0 and LRPM12:GenerateIconCategoryPredicate(activeCategories) or nil
+	local baseIconCount = LRPM12:GetNumIcons()
+
+	local activeCategorySet = nil
+	if categoryPredicate then
+		activeCategorySet = {}
+		for _, category in ipairs(activeCategories) do
+			activeCategorySet[category] = true;
+		end
+	end
 
 	local function DoesIconMatchFilters(_, iconInfo)
-		if categoryPredicate and not categoryPredicate(iconInfo.index) then
-			return false;
+		if categoryPredicate then
+			if iconInfo.index > baseIconCount then
+				-- custom icons aren't part of LRPM12's tag data
+				local matchesAnyCategory = false;
+				if iconInfo.categories then
+					for _, category in ipairs(iconInfo.categories) do
+						if activeCategorySet[category] then
+							matchesAnyCategory = true;
+							break;
+						end
+					end
+				end
+				if not matchesAnyCategory then
+					return false;
+				end
+			elseif not categoryPredicate(iconInfo.index) then
+				return false;
+			end
 		end
 
 		if query ~= "" then

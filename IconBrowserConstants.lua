@@ -58,7 +58,7 @@ local IconBrowserConstants = {
 	MeleeWeaponCategories = {
 		{ category = LRPM12.IconCategory.WeaponTypeAxe,			name = L.ICON_CATEGORY_AXE },
 		{ category = LRPM12.IconCategory.WeaponTypeDagger,		name = L.ICON_CATEGORY_DAGGER },
-		{ category = LRPM12.IconCategory.WeaponTypeFists,		name = L.ICON_CATEGORY_FIST_WEAPON },
+		{ category = LRPM12.IconCategory.WeaponTypeFists,		name = L.ICON_CATEGORY_FIST_WEAPON,	tokens = { "fist" } },
 		{ category = LRPM12.IconCategory.WeaponTypeMace,		name = L.ICON_CATEGORY_MACE },
 		{ category = LRPM12.IconCategory.WeaponTypePolearm,		name = L.ICON_CATEGORY_POLEARM },
 		{ category = LRPM12.IconCategory.WeaponTypeStaff,		name = L.ICON_CATEGORY_STAFF },
@@ -84,21 +84,21 @@ local IconBrowserConstants = {
 	};
 
 	InventorySlotCategories = {
-		{ category = LRPM12.IconCategory.InventorySlotHead,			name = L.ICON_CATEGORY_HEAD,		sortIndex = 1 },
-		{ category = LRPM12.IconCategory.InventorySlotNeck,			name = L.ICON_CATEGORY_NECK,		sortIndex = 2 },
-		{ category = LRPM12.IconCategory.InventorySlotShoulders,	name = L.ICON_CATEGORY_SHOULDERS,	sortIndex = 3 },
-		{ category = LRPM12.IconCategory.InventorySlotBack,			name = L.ICON_CATEGORY_BACK,		sortIndex = 4 },
+		{ category = LRPM12.IconCategory.InventorySlotHead,			name = L.ICON_CATEGORY_HEAD,		sortIndex = 1,	tokens = { "helm" } },
+		{ category = LRPM12.IconCategory.InventorySlotNeck,			name = L.ICON_CATEGORY_NECK,		sortIndex = 2,	tokens = { "amulet", "necklace" } },
+		{ category = LRPM12.IconCategory.InventorySlotShoulders,	name = L.ICON_CATEGORY_SHOULDERS,	sortIndex = 3,	tokens = { "shoulder" } },
+		{ category = LRPM12.IconCategory.InventorySlotBack,			name = L.ICON_CATEGORY_BACK,		sortIndex = 4,	tokens = { "cape", "cloak" } },
 		{ category = LRPM12.IconCategory.InventorySlotChest,		name = L.ICON_CATEGORY_CHEST,		sortIndex = 5 },
 		{ category = LRPM12.IconCategory.InventorySlotShirt,		name = L.ICON_CATEGORY_SHIRT,		sortIndex = 6 },
 		{ category = LRPM12.IconCategory.InventorySlotTabard,		name = L.ICON_CATEGORY_TABARD,		sortIndex = 7 },
-		{ category = LRPM12.IconCategory.InventorySlotWrists,		name = L.ICON_CATEGORY_WRISTS,		sortIndex = 8 },
-		{ category = LRPM12.IconCategory.InventorySlotHands,		name = L.ICON_CATEGORY_HANDS,		sortIndex = 9 },
-		{ category = LRPM12.IconCategory.InventorySlotWaist,		name = L.ICON_CATEGORY_WAIST,		sortIndex = 10 },
-		{ category = LRPM12.IconCategory.InventorySlotLegs,			name = L.ICON_CATEGORY_LEGS,		sortIndex = 11 },
-		{ category = LRPM12.IconCategory.InventorySlotFeet,			name = L.ICON_CATEGORY_FEET,		sortIndex = 12 },
+		{ category = LRPM12.IconCategory.InventorySlotWrists,		name = L.ICON_CATEGORY_WRISTS,		sortIndex = 8,	tokens = { "bracer", "wrist" } },
+		{ category = LRPM12.IconCategory.InventorySlotHands,		name = L.ICON_CATEGORY_HANDS,		sortIndex = 9,	tokens = { "glove", "gauntlet" } },
+		{ category = LRPM12.IconCategory.InventorySlotWaist,		name = L.ICON_CATEGORY_WAIST,		sortIndex = 10,	tokens = { "belt" } },
+		{ category = LRPM12.IconCategory.InventorySlotLegs,			name = L.ICON_CATEGORY_LEGS,		sortIndex = 11,	tokens = { "pant", "leg" } },
+		{ category = LRPM12.IconCategory.InventorySlotFeet,			name = L.ICON_CATEGORY_FEET,		sortIndex = 12,	tokens = { "boot" } },
 		{ category = LRPM12.IconCategory.InventorySlotRing,			name = L.ICON_CATEGORY_RING,		sortIndex = 13 },
 		{ category = LRPM12.IconCategory.InventorySlotTrinket,		name = L.ICON_CATEGORY_TRINKET,		sortIndex = 14 },
-		{ category = LRPM12.IconCategory.InventorySlotOffHand,		name = L.ICON_CATEGORY_OFF_HAND,	sortIndex = 15 },
+		{ category = LRPM12.IconCategory.InventorySlotOffHand,		name = L.ICON_CATEGORY_OFF_HAND,	sortIndex = 15,	tokens = { "offhand", "off_hand", "holdable" } },
 		{ category = LRPM12.IconCategory.InventorySlotShield,		name = L.ICON_CATEGORY_SHIELD,		sortIndex = 16 },
 	};
 
