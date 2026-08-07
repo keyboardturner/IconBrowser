@@ -1,5 +1,13 @@
 [Full Changelog & Previous Releases](https://github.com/keyboardturner/IconBrowser/releases)
 
+# 0.0.8
+
+Added file names to verified icons at the bottom of the icon list
+ - many of these entries will be green as they are encrypted
+ - many entries will not have names going forward due to recent changes by Blizzard
+
+12.1.0 toc update
+
 # 0.0.7
 
 12.0.7 toc update
