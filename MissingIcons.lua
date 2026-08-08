@@ -287,5 +287,6 @@ LRPMIB.ListfileIconNames = {
     [8159946] = "inv_glaive_1h_snakeoid_c_01",
     [8159971] = "inv_staff_2h_snakeoid_c_01",
     [8159972] = "inv_sword_2h_snakeoid_c_01",
+    [8166882] = "inv_oxhomemount_brown",
     [8262637] = "inv_12ph_artisanalrooms",
 };
