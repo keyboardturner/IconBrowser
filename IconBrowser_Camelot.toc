@@ -47,7 +47,7 @@
 Libs\LibStub\LibStub.lua
 Libs\LibRPMedia\lib.xml
 
-MissingIcons.lua
+MissingIcons_Forever.lua
 
 Localization.lua
 IconBrowserConstants.lua

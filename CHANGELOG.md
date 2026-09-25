@@ -1,5 +1,10 @@
 [Full Changelog & Previous Releases](https://github.com/keyboardturner/IconBrowser/releases)
 
+# 0.0.9
+
+WoW Forever testing - This is an in-development testing version. Some things may throw errors or explode.
+- Many of the new icons for Forever Beta are not yet supported by LibRPMedia's main branch. This won't be the case at release.
+
 # 0.0.8
 
 Added file names to verified icons at the bottom of the icon list
