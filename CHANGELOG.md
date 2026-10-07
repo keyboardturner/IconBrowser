@@ -1,5 +1,9 @@
 [Full Changelog & Previous Releases](https://github.com/keyboardturner/IconBrowser/releases)
 
+# 0.0.9a
+
+No longer auto-focus the search editbox text
+
 # 0.0.9
 
 WoW Forever testing - This is an in-development testing version. Some things may throw errors or explode.

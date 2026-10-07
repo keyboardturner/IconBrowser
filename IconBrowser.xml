@@ -57,7 +57,7 @@
 				</Texture>
 			</Layer>
 			<Layer level="OVERLAY">
-				<FontString parentKey="Text" inherits="GameFontHighlightSmall" text="Searching...">
+				<FontString parentKey="Text" inherits="GameFontHighlightSmall" text="SEARCHING">
 					<Anchors>
 						<Anchor point="CENTER"/>
 					</Anchors>

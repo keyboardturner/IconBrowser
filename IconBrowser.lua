@@ -847,7 +847,7 @@ function LRPMIB_IconBrowserMixin:SetPinnedFileIDs(fileIDs)
 end
 
 function LRPMIB_IconBrowserMixin:OnShow()
-	self.SearchBox:SetFocus()
+	--self.SearchBox:SetFocus()
 	
 	RunNextFrame(function()
 		self:UpdateSelection();
