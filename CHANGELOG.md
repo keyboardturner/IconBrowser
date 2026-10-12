@@ -1,5 +1,9 @@
 [Full Changelog & Previous Releases](https://github.com/keyboardturner/IconBrowser/releases)
 
+# 0.1.0
+
+12.1.5 toc update
+
 # 0.0.9a
 
 No longer auto-focus the search editbox text
