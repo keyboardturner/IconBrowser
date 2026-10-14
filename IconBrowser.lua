@@ -160,6 +160,15 @@ function IconBrowserModel:Init()
 	self:GenerateCallbackEvents({"OnModelUpdated"});
 	self:OnLoad();
 
+	self.modelToSource = {};
+	local numBase = LRPM12:GetNumIcons();
+	for i = 1, numBase do
+		local info = LRPM12:GetIconInfoByIndex(i);
+		if info and info.type == LRPM12.IconType.File then
+			table.insert(self.modelToSource, i);
+		end
+	end
+
 	-- blizz removed a lot of icon names
 	self.customIcons = {};
 	local seen = {};
@@ -196,48 +205,67 @@ function IconBrowserModel:Init()
 end
 
 function IconBrowserModel:GetIconCount()
-	return LRPM12:GetNumIcons() + #self.customIcons;
+	return #self.modelToSource + #self.customIcons;
 end
 
 function IconBrowserModel:GetIconInfo(index)
-	local baseCount = LRPM12:GetNumIcons();
+	local baseCount = #self.modelToSource;
 	
 	if index <= baseCount then
-		return LRPM12:GetIconInfoByIndex(index);
+		local sourceIndex = self.modelToSource[index];
+		local info = LRPM12:GetIconInfoByIndex(sourceIndex);
+		if info then
+			info.modelIndex = index;
+			info.sourceIndex = sourceIndex;
+		end
+		return info;
 	end
 	
 	local customIcon = self.customIcons[index - baseCount];
 	if customIcon then
 		return {
 			index = index,
+			modelIndex = index,
 			file = customIcon.file,
 			name = customIcon.name,
-			categories = customIcon.categories
+			categories = customIcon.categories,
+			type = LRPM12.IconType.File,
+			id = customIcon.file,
+			key = customIcon.file,
 		};
 	end
 end
 
 function IconBrowserModel:EnumerateIcons(options)
-	local baseIterator = LRPM12:EnumerateIcons(options);
-	local baseCount = LRPM12:GetNumIcons();
-	local customIndex = 0;
+	local modelToSource = self.modelToSource;
+	local numBase = #modelToSource;
 	local customIcons = self.customIcons;
+	local index = 0;
+	local totalCount = numBase + #customIcons;
 
 	return function()
-		local baseIndex, baseInfo = baseIterator();
-		if baseIndex ~= nil then
-			return baseIndex, baseInfo;
-		end
-
-		customIndex = customIndex + 1;
-		if customIndex <= #customIcons then
-			local proxyIndex = baseCount + customIndex;
+		index = index + 1;
+		if index <= numBase then
+			local sourceIndex = modelToSource[index];
+			local info = LRPM12:GetIconInfoByIndex(sourceIndex);
+			if info then
+				info.modelIndex = index;
+				info.sourceIndex = sourceIndex;
+			end
+			return index, info;
+		elseif index <= totalCount then
+			local customIndex = index - numBase;
 			local icon = customIcons[customIndex];
+			local proxyIndex = index;
 			return proxyIndex, {
 				index = proxyIndex,
+				modelIndex = proxyIndex,
 				file = icon.file,
 				name = icon.name,
-				categories = icon.categories
+				categories = icon.categories,
+				type = LRPM12.IconType.File,
+				id = icon.file,
+				key = icon.file,
 			};
 		end
 	end
@@ -552,8 +580,11 @@ function IconBrowserFilterModel:RebuildModel()
 
 	local function DoesIconMatchFilters(_, iconInfo)
 		if categoryPredicate then
-			if iconInfo.index > baseIconCount then
-				-- custom icons aren't part of LRPM12's tag data
+			if iconInfo.sourceIndex then
+				if not categoryPredicate(iconInfo.sourceIndex) then
+					return false;
+				end
+			elseif iconInfo.index > baseIconCount then
 				local matchesAnyCategory = false;
 				if iconInfo.categories then
 					for _, category in ipairs(iconInfo.categories) do
@@ -635,7 +666,9 @@ function LRPMIB_IconBrowserButtonMixin:OnEnter()
 	if not iconInfo then return; end
 	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 	GameTooltip:SetText(iconInfo.name or L["UnknownIcon"], 1, 1, 1)
-	GameTooltip:AddLine(string.format(L["FileID"], iconInfo.file), 0.44, 0.83, 1)
+	if iconInfo.file then
+		GameTooltip:AddLine(string.format(L["FileID"], iconInfo.file), 0.44, 0.83, 1)
+	end
 	GameTooltip:Show()
 end
 
@@ -1111,6 +1144,65 @@ EventUtil.ContinueOnAddOnLoaded("MacroToolkit", function()
 		hooksecurefunc(MT, "CreateMTPopup", InjectMTBrowser);
 	end
 end)
+
+
+local StandaloneIconBrowserFrame;
+
+local function CreateStandaloneIconBrowser()
+	if StandaloneIconBrowserFrame then return StandaloneIconBrowserFrame; end
+
+	local frame = CreateFrame("Frame", "LRPMIB_StandaloneIconBrowserFrame", UIParent, "PortraitFrameBaseTemplate");
+	frame:SetSize(520, 500);
+	frame:SetPoint("CENTER");
+	frame:SetMovable(true);
+	frame:EnableMouse(true);
+	frame:RegisterForDrag("LeftButton");
+	frame:SetScript("OnDragStart", frame.StartMoving);
+	frame:SetScript("OnDragStop", frame.StopMovingOrSizing);
+	frame:Hide();
+	ButtonFrameTemplate_HidePortrait(frame);
+
+	if not frame.CloseButton then
+		local closeButton = CreateFrame("Button", nil, frame, "UIPanelCloseButtonDefaultAnchors");
+		frame.CloseButton = closeButton;
+	end
+
+	if not frame.Inset then
+		local inset = CreateFrame("Frame", nil, frame, "InsetFrameTemplate");
+		inset:SetPoint("TOPLEFT", frame, "TOPLEFT", 4, -20);
+		inset:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 6);
+		frame.Inset = inset;
+	end
+
+	if _G.LRPMediaIconBrowserAPI and _G.LRPMediaIconBrowserAPI.CreateBrowser then
+
+		local browser = _G.LRPMediaIconBrowserAPI.CreateBrowser(frame, nil, 500, 440, nil);
+		browser:ClearAllPoints();
+		browser:SetPoint("TOPLEFT", frame.Inset, "TOPLEFT", 6, -6);
+		browser:SetPoint("BOTTOMRIGHT", frame.Inset, "BOTTOMRIGHT", -6, -13);
+		browser:Show();
+		
+		frame.iconBrowser = browser;
+	end
+
+	StandaloneIconBrowserFrame = frame;
+	return frame;
+end
+
+SLASH_LRPMIB_STANDALONE1 = "/iconbrowser"	-- non localized
+SLASH_LRPMIB_STANDALONE2 = "/icb"			-- non localized
+SLASH_LRPMIB_STANDALONE3 = L["SLASH_1"]
+
+SlashCmdList["LRPMIB_STANDALONE"] = function(msg)
+	local frame = CreateStandaloneIconBrowser();
+	if frame then
+		if frame:IsShown() then
+			frame:Hide();
+		else
+			frame:Show();
+		end
+	end
+end
 
 
 -- some Global API stuff for other people to use the browser for their own addons

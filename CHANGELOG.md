@@ -1,5 +1,13 @@
 [Full Changelog & Previous Releases](https://github.com/keyboardturner/IconBrowser/releases)
 
+# 0.1.1
+
+Fixed issue with atlas entries showing up in iconbrowser (these are incompatible with most icon selections) and fixed a potential error
+
+Added a /iconbrowser and /icb slash command to open a standalone icon browser frame
+
+Added new icons found with compiler tools for 12.1.5 / Forever (many of these will likely be encrypted)
+
 # 0.1.0
 
 12.1.5 toc update

@@ -33,6 +33,7 @@ if LOCALE == "enUS" then
 	-- uses the US English locale code.
 	L["TOC_Title"] = "Icon Browser"
 	L["TOC_Notes"] = "A replacement icon browser for macros, bank, and transmog with a search bar and preset filters."
+	L["SLASH_1"] = "/iconbrowser"
 
 	-- DataTagInfo.db2
 	L["ICON_CATEGORY_DRACTHYR"] = "Dracthyr"
@@ -170,6 +171,7 @@ if LOCALE == "esMX" then
 -- Spanish (Mexico) translations go here
 	L["TOC_Title"] = "Navegador de iconos (Icon Browser)"
 	L["TOC_Notes"] = "Un navegador de iconos alternativo para macros, banco y transfiguración con una barra de búsqueda y filtros preestablecidos."
+	L["SLASH_1"] = "/navegadordeiconos"
 
 	L["ICON_CATEGORY_DRACTHYR"] = "Dracthyr"
 	L["ICON_CATEGORY_DRAENEI"] = "Draenei"
@@ -295,6 +297,7 @@ if LOCALE == "esES" then
 	-- Spanish translations go here
 	L["TOC_Title"] = "Navegador de iconos (Icon Browser)"
 	L["TOC_Notes"] = "Un navegador de iconos alternativo para macros, banco y transfiguración con una barra de búsqueda y filtros preestablecidos."
+	L["SLASH_1"] = "/navegadordeiconos"
 
 	L["ICON_CATEGORY_DRACTHYR"] = "Dracthyr"
 	L["ICON_CATEGORY_DRAENEI"] = "Draenei"
@@ -419,6 +422,7 @@ if LOCALE == "deDE" then
 	-- German translations go here
 	L["TOC_Title"] = "Symbolbrowser (Icon Browser)"
 	L["TOC_Notes"] = "Ein Ersatz-Iconbrowser für Makros, Bank und Transmog mit Suchleiste und voreingestellten Filtern."
+	L["SLASH_1"] = "/symbolbrowser"
 
 	L["ICON_CATEGORY_DRACTHYR"] = "Dracthyr"
 	L["ICON_CATEGORY_DRAENEI"] = "Draenei"
@@ -543,6 +547,7 @@ if LOCALE == "frFR" then
 	-- French translations go here
 	L["TOC_Title"] = "Navigateur d’icônes (Icon Browser)"
 	L["TOC_Notes"] = "Un navigateur d’icônes de remplacement pour macros, banque et transmogrification avec une barre de recherche et des filtres prédéfinis."
+	L["SLASH_1"] = "/navigateurdicones"
 
 	L["ICON_CATEGORY_DRACTHYR"] = "Dracthyr"
 	L["ICON_CATEGORY_DRAENEI"] = "Draeneï"
@@ -667,6 +672,7 @@ if LOCALE == "itIT" then
 	-- Italian translations go here
 	L["TOC_Title"] = "Browser delle icone (Icon Browser)"
 	L["TOC_Notes"] = "Un browser di icone sostitutivo per macro, banca e trasmogrificazione con una barra di ricerca e filtri preimpostati."
+	L["SLASH_1"] = "/browserdelleicone"
 
 	L["ICON_CATEGORY_DRACTHYR"] = "Dracthyr"
 	L["ICON_CATEGORY_DRAENEI"] = "Draenei"
@@ -791,6 +797,7 @@ if LOCALE == "ptBR" then
 	-- Brazilian Portuguese translations go here
 	L["TOC_Title"] = "Navegador de ícones (Icon Browser)"
 	L["TOC_Notes"] = "Um navegador de ícones substituto para macros, banco e transmogrificação com barra de pesquisa e filtros predefinidos."
+	L["SLASH_1"] = "/navegadordeicones"
 
 	L["ICON_CATEGORY_DRACTHYR"] = "Dracthyr"
 	L["ICON_CATEGORY_DRAENEI"] = "Draeneico"
@@ -917,6 +924,7 @@ if LOCALE == "ruRU" then
 	-- Russian translations go here
 	L["TOC_Title"] = "Браузер значков (Icon Browser)"
 	L["TOC_Notes"] = "Замена браузера значков для макросов, банка и трансмогрификации с строкой поиска и предустановленными фильтрами."
+	L["SLASH_1"] = "/браузерзначков"
 
 	L["ICON_CATEGORY_DRACTHYR"] = "Драктиры"
 	L["ICON_CATEGORY_DRAENEI"] = "Дренеи"
@@ -1041,6 +1049,7 @@ if LOCALE == "koKR" then
 	-- Korean translations go here
 	L["TOC_Title"] = "아이콘 브라우저 (Icon Browser)"
 	L["TOC_Notes"] = "매크로, 은행, 형상변환용 아이콘 브라우저 대체, 검색창과 사전 설정 필터 포함."
+	L["SLASH_1"] = "/아이콘브라우저"
 
 	L["ICON_CATEGORY_DRACTHYR"] = "드랙티르"
 	L["ICON_CATEGORY_DRAENEI"] = "드레나이"
@@ -1166,6 +1175,7 @@ if LOCALE == "zhCN" then
 	-- Simplified Chinese translations go here
 	L["TOC_Title"] = "图标浏览器 (Icon Browser)"
 	L["TOC_Notes"] = "用于宏、银行和幻化的图标浏览器替代工具，带搜索栏和预设过滤器。"
+	L["SLASH_1"] = "/图标浏览器"
 
 	L["ICON_CATEGORY_DRACTHYR"] = "希尔"
 	L["ICON_CATEGORY_DRAENEI"] = "德莱尼"
@@ -1290,6 +1300,7 @@ if LOCALE == "zhTW" then
 	-- Traditional Chinese translations go here
 	L["TOC_Title"] = "圖示瀏覽器 (Icon Browser)"
 	L["TOC_Notes"] = "用於巨集、銀行與塑形的圖示瀏覽器替代工具，含搜尋欄與預設過濾條件。"
+	L["SLASH_1"] = "/圖示瀏覽器"
 
 	L["ICON_CATEGORY_DRACTHYR"] = "半龍人"
 	L["ICON_CATEGORY_DRAENEI"] = "德萊尼"
